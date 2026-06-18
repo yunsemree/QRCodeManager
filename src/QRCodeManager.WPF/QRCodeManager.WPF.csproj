@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <!-- Uygulama kimliği -->
+    <AssemblyName>QRCodeManager</AssemblyName>
+    <Product>QR Manager</Product>
+    <Company>Yunus Emre Teke</Company>
+    <Authors>Yunus Emre Teke</Authors>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QRCodeManager.Application\QRCodeManager.Application.csproj" />
+    <ProjectReference Include="..\QRCodeManager.Infrastructure\QRCodeManager.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="MaterialDesignColors" Version="3.1.0" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\app-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>Assets\app-icon.png</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- Başlangıç SQLite şablonu: kök dizine kopyalanır (ilk çalıştırma yedeği) -->
+  <ItemGroup>
+    <Content Include="Database\InitialDatabase.db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>InitialDatabase.db</TargetPath>
+    </Content>
+  </ItemGroup>
+
+  <!-- Publish sonrası installer kaynağı: database\database.db -->
+  <Target Name="CopyPublishDatabase" AfterTargets="Publish" Condition="'$(PublishDir)' != ''">
+    <PropertyGroup>
+      <_InitialDbSource>$(MSBuildProjectDirectory)\Database\InitialDatabase.db</_InitialDbSource>
+      <_PublishDatabaseDir>$(PublishDir)database</_PublishDatabaseDir>
+      <_PublishDatabaseFile>$(_PublishDatabaseDir)\database.db</_PublishDatabaseFile>
+    </PropertyGroup>
+    <MakeDir Directories="$(_PublishDatabaseDir)" />
+    <Copy
+      SourceFiles="$(_InitialDbSource)"
+      DestinationFiles="$(_PublishDatabaseFile)"
+      Condition="Exists('$(_InitialDbSource)')" />
+  </Target>
+
+</Project>

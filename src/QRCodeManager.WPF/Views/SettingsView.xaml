@@ -1,0 +1,70 @@
+<UserControl x:Class="QRCodeManager.WPF.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:models="clr-namespace:QRCodeManager.WPF.Models"
+             xmlns:constants="clr-namespace:QRCodeManager.Application.Constants;assembly=QRCodeManager.Application">
+    <Grid>
+        <Border Style="{StaticResource DashboardCard}" MaxWidth="560" HorizontalAlignment="Left">
+            <StackPanel>
+                <TextBlock Text="Görünüm ve Tercihler"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TitleTextBrush}"
+                           Margin="0,0,0,8" />
+                <TextBlock Text="Tema değişiklikleri anında uygulanır."
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           Margin="0,0,0,20" />
+
+                <ComboBox Margin="0,0,0,16"
+                          materialDesign:HintAssist.Hint="Tema"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          ItemsSource="{Binding Themes}"
+                          SelectedItem="{Binding Theme}" />
+
+                <ComboBox Margin="0,0,0,16"
+                          materialDesign:HintAssist.Hint="Varsayılan hata düzeltme"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          DisplayMemberPath="DisplayName"
+                          ItemsSource="{x:Static models:ErrorCorrectionOption.All}"
+                          SelectedValuePath="Level"
+                          SelectedValue="{Binding DefaultErrorCorrection}" />
+
+                <ComboBox Margin="0,0,0,16"
+                          materialDesign:HintAssist.Hint="Varsayılan dışa aktarma formatı"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          ItemsSource="{Binding ExportFormats}"
+                          SelectedItem="{Binding DefaultExportFormat}" />
+
+                <TextBox Margin="0,0,0,20"
+                         materialDesign:HintAssist.Hint="Maksimum veri boyutu (karakter)"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Text="{Binding MaximumJsonSize, UpdateSourceTrigger=PropertyChanged}" />
+
+                <WrapPanel>
+                    <Button Content="Kaydet"
+                            Margin="0,0,8,8"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Command="{Binding SaveSettingsCommand}" />
+                    <Button Content="Varsayılana Dön"
+                            Margin="0,0,8,8"
+                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding ResetToDefaultsCommand}" />
+                </WrapPanel>
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           Margin="0,8,0,0"
+                           Foreground="{DynamicResource MutedTextBrush}" />
+
+                <TextBlock Margin="0,24,0,0"
+                           FontSize="12"
+                           Foreground="{DynamicResource MutedTextBrush}">
+                    <Run Text="QR Manager v" />
+                    <Run Text="{x:Static constants:ApplicationConstants.ApplicationVersion}" />
+                    <Run Text=" · " />
+                    <Run Text="{x:Static constants:ApplicationConstants.PublisherName}" />
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

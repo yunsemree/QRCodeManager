@@ -1,0 +1,49 @@
+<UserControl x:Class="QRCodeManager.WPF.Controls.AssetFormControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBox Margin="0,0,0,16"
+                     materialDesign:HintAssist.Hint="Ürün *"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     Text="{Binding Urun, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBox Margin="0,0,0,16"
+                     materialDesign:HintAssist.Hint="Materyal"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     Text="{Binding Materyal, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBox Margin="0,0,0,16"
+                     materialDesign:HintAssist.Hint="Sahibi"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     Text="{Binding Sahibi, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBox Margin="0,0,0,16"
+                     materialDesign:HintAssist.Hint="Konumu"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     Text="{Binding Konumu, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBox Margin="0,0,0,8"
+                     materialDesign:HintAssist.Hint="Seri No *"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     Text="{Binding SeriNo, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Margin="0,4,0,0"
+                       Foreground="{DynamicResource MaterialDesignBodyLight}"
+                       FontSize="12"
+                       Text="* zorunlu alanlar"
+                       Visibility="{Binding ShowRequiredHint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
