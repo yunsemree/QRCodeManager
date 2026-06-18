@@ -39,7 +39,7 @@ Seri No   : ABC123456
 | Katman | Teknoloji |
 |--------|-----------|
 | UI | WPF (.NET 8), MVVM (CommunityToolkit.Mvvm), Material Design |
-| Uygulama | Clean Architecture, servis/repository desenleri |
+| Uygulama | Clean Architecture, servis/repository pattern |
 | Veritabanı | EF Core 8 + SQLite |
 | QR | QRCoder (üretim), ZXing.Net (okuma) |
 | Kurulum | Inno Setup 6 |
