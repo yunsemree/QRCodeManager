@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using QRCodeManager.Application.Constants;
 using QRCodeManager.Application.DTOs;
 using QRCodeManager.Application.Interfaces;
 
@@ -51,7 +52,13 @@ public class SettingsService : ISettingsService
             }
 
             var json = File.ReadAllText(_settingsFilePath);
-            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            if (settings.FieldDefinitions is null || settings.FieldDefinitions.Count == 0)
+            {
+                settings.FieldDefinitions = FieldDefinitionDefaults.Create();
+            }
+
+            return settings;
         }
         catch (Exception ex)
         {

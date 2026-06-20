@@ -65,7 +65,7 @@ public partial class ReadQrViewModel : ObservableObject
             var rawText = _qrService.DecodeQrFromFile(SelectedImagePath);
             var form = _assetFormService.ParseFromContent(rawText);
             FormattedOutput = _assetFormService.FormatDisplay(form);
-            HasDecodedData = !string.IsNullOrWhiteSpace(form.Urun) || !string.IsNullOrWhiteSpace(form.SeriNo);
+            HasDecodedData = form.Values.Values.Any(value => !string.IsNullOrWhiteSpace(value));
 
             StatusMessage = HasDecodedData
                 ? "QR kodu başarıyla okundu."

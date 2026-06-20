@@ -39,12 +39,8 @@
                             Command="{Binding ClearFormCommand}" />
                 </StackPanel>
 
-                <controls:AssetFormControl Urun="{Binding Urun, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Materyal="{Binding Materyal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Sahibi="{Binding Sahibi, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Konumu="{Binding Konumu, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           SeriNo="{Binding SeriNo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           ShowRequiredHint="True" />
+                <controls:DynamicAssetFormControl Fields="{Binding Fields}"
+                                                  ShowRequiredHint="True" />
             </DockPanel>
         </Border>
 

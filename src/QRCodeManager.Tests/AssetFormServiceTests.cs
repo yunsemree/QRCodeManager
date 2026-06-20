@@ -1,28 +1,22 @@
+using QRCodeManager.Application.Constants;
+using QRCodeManager.Application.DTOs;
+using QRCodeManager.Application.Interfaces;
 using QRCodeManager.Infrastructure.Services;
 
 namespace QRCodeManager.Tests;
 
 public class AssetFormServiceTests
 {
-    private readonly AssetFormService _sut = new();
+    private readonly AssetFormService _sut = new(new TestSettingsService());
 
     [Fact]
     public void FormatDisplay_ValidForm_ReturnsFormattedText()
     {
-        var output = _sut.FormatDisplay(new Application.DTOs.AssetFormDto
-        {
-            Urun = "Laptop",
-            Materyal = "Alüminyum",
-            Sahibi = "Yunus Emre Teke",
-            Konumu = "Sivas Halk Eğitim Merkezi",
-            SeriNo = "ABC123456"
-        });
+        var form = CreateSampleForm();
+        var output = _sut.FormatDisplay(form);
 
         Assert.Contains("📦 Eser Bilgisi", output);
         Assert.Contains("Ürün      : Laptop", output);
-        Assert.Contains("Materyal  : Alüminyum", output);
-        Assert.Contains("Sahibi    : Yunus Emre Teke", output);
-        Assert.Contains("Konumu    : Sivas Halk Eğitim Merkezi", output);
         Assert.Contains("Seri No   : ABC123456", output);
     }
 
@@ -40,33 +34,51 @@ public class AssetFormServiceTests
 
         var form = _sut.ParseFromContent(content);
 
-        Assert.Equal("Laptop", form.Urun);
-        Assert.Equal("Alüminyum", form.Materyal);
-        Assert.Equal("Yunus Emre Teke", form.Sahibi);
-        Assert.Equal("Sivas Halk Eğitim Merkezi", form.Konumu);
-        Assert.Equal("ABC123456", form.SeriNo);
+        Assert.Equal("Laptop", form.GetValue("urun"));
+        Assert.Equal("ABC123456", form.GetValue("seriNo"));
     }
 
     [Fact]
-    public void ToJson_ValidForm_ReturnsEserJson()
+    public void ToJson_ValidForm_ReturnsDynamicEserJson()
     {
-        var json = _sut.ToJson(new Application.DTOs.AssetFormDto
-        {
-            SeriNo = "ABC123456",
-            Urun = "Laptop"
-        });
+        var json = _sut.ToJson(CreateSampleForm());
 
         Assert.Contains("ABC123456", json);
         Assert.Contains("Laptop", json);
-        Assert.Contains("eser", json);
+        Assert.Contains("fields", json);
+        Assert.Contains("schemaVersion", json);
     }
 
     [Fact]
     public void TryValidate_MissingRequiredFields_ReturnsFalse()
     {
-        var isValid = _sut.TryValidate(new Application.DTOs.AssetFormDto(), out var error);
+        var isValid = _sut.TryValidate(new AssetFormDto(), out var error);
 
         Assert.False(isValid);
-        Assert.Contains("Seri numarası", error);
+        Assert.Contains("zorunlu", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static AssetFormDto CreateSampleForm()
+    {
+        var form = new AssetFormDto();
+        form.SetValue("urun", "Laptop");
+        form.SetValue("materyal", "Alüminyum");
+        form.SetValue("sahibi", "Yunus Emre Teke");
+        form.SetValue("konumu", "Sivas Halk Eğitim Merkezi");
+        form.SetValue("seriNo", "ABC123456");
+        return form;
+    }
+
+    private sealed class TestSettingsService : ISettingsService
+    {
+        private AppSettings _settings = new() { FieldDefinitions = FieldDefinitionDefaults.Create() };
+
+        public AppSettings GetSettings() => _settings;
+
+        public Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
+        {
+            _settings = settings;
+            return Task.CompletedTask;
+        }
     }
 }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using QRCodeManager.Application.Interfaces;
 using QRCodeManager.Infrastructure;
 using QRCodeManager.WPF.Helpers;
 using QRCodeManager.WPF.Services;
@@ -33,6 +34,8 @@ public partial class App : System.Windows.Application
                     services.AddInfrastructure();
 
                     services.AddSingleton<INavigationMessenger, NavigationMessenger>();
+                    services.AddTransient<LoginViewModel>();
+                    services.AddTransient<RegisterViewModel>();
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<GenerateQrViewModel>();
                     services.AddTransient<ReadQrViewModel>();
@@ -46,13 +49,17 @@ public partial class App : System.Windows.Application
 
             await _host.Services.InitializeDatabaseAsync();
 
+            var authService = _host.Services.GetRequiredService<IAuthService>();
+            await authService.InitializeAsync();
+
             _scope = _host.Services.CreateScope();
             var mainWindow = _scope.ServiceProvider.GetRequiredService<MainWindow>();
-            var settingsService = _scope.ServiceProvider.GetRequiredService<Application.Interfaces.ISettingsService>();
+            var settingsService = _scope.ServiceProvider.GetRequiredService<ISettingsService>();
 
             if (mainWindow.DataContext is MainViewModel mainViewModel)
             {
                 mainViewModel.SettingsViewModel.ThemeChanged += ThemeHelper.ApplyTheme;
+                mainViewModel.InitializeNavigation();
             }
 
             ThemeHelper.ApplyTheme(settingsService.GetSettings().Theme);

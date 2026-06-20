@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -22,20 +23,7 @@ public partial class GenerateQrViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly ILogger<GenerateQrViewModel> _logger;
 
-    [ObservableProperty]
-    private string _urun = "Laptop";
-
-    [ObservableProperty]
-    private string _materyal = "Alüminyum";
-
-    [ObservableProperty]
-    private string _sahibi = "Yunus Emre Teke";
-
-    [ObservableProperty]
-    private string _konumu = "Sivas Halk Eğitim Merkezi";
-
-    [ObservableProperty]
-    private string _seriNo = "ABC123456";
+    public ObservableCollection<DynamicFormField> Fields { get; } = [];
 
     [ObservableProperty]
     private bool _isFormValid;
@@ -74,35 +62,49 @@ public partial class GenerateQrViewModel : ObservableObject
 
         var defaultLevel = settingsService.GetSettings().DefaultErrorCorrection;
         SelectedErrorCorrection = ErrorCorrectionOptions.First(x => x.Level == defaultLevel);
-        ValidateForm();
+        ReloadFields();
     }
 
-    partial void OnUrunChanged(string value) => ValidateForm();
-    partial void OnSeriNoChanged(string value) => ValidateForm();
+    public void ReloadFields(Dictionary<string, string>? values = null)
+    {
+        Fields.Clear();
+        var definitions = _settingsService.GetSettings().FieldDefinitions
+            .OrderBy(d => d.SortOrder)
+            .ThenBy(d => d.Label, StringComparer.CurrentCultureIgnoreCase);
+
+        foreach (var definition in definitions)
+        {
+            var existingValue = string.Empty;
+            if (values is not null && values.TryGetValue(definition.Key, out var value))
+            {
+                existingValue = value;
+            }
+
+            var field = new DynamicFormField(
+                definition.Key,
+                definition.Label,
+                definition.IsRequired,
+                existingValue ?? string.Empty);
+            field.PropertyChanged += (_, _) => ValidateForm();
+            Fields.Add(field);
+        }
+
+        ValidateForm();
+    }
 
     public void LoadJson(string json)
     {
         var form = _assetFormService.ParseFromContent(json);
-        Urun = form.Urun;
-        Materyal = form.Materyal;
-        Sahibi = form.Sahibi;
-        Konumu = form.Konumu;
-        SeriNo = form.SeriNo;
-        ValidateForm();
+        ReloadFields(form.Values.ToDictionary(pair => pair.Key, pair => pair.Value));
     }
 
     [RelayCommand]
     private void ClearForm()
     {
-        Urun = string.Empty;
-        Materyal = string.Empty;
-        Sahibi = string.Empty;
-        Konumu = string.Empty;
-        SeriNo = string.Empty;
+        ReloadFields();
         QrPreview = null;
         QrImageBytes = null;
         StatusMessage = "Form temizlendi.";
-        ValidateForm();
     }
 
     [RelayCommand]
@@ -130,9 +132,13 @@ public partial class GenerateQrViewModel : ObservableObject
             var imagePath = Path.Combine(AppPaths.QrImagesDirectory, fileName);
             await ClipboardHelper.SavePngAsync(QrImageBytes, imagePath);
 
+            var titleField = Fields.FirstOrDefault(f => f.IsRequired)?.Value
+                ?? Fields.FirstOrDefault()?.Value
+                ?? "QR Kaydı";
+
             await _historyRepository.AddAsync(new QrHistoryDto
             {
-                Title = string.IsNullOrWhiteSpace(form.Urun) ? "QR Kaydı" : form.Urun.Trim(),
+                Title = string.IsNullOrWhiteSpace(titleField) ? "QR Kaydı" : titleField.Trim(),
                 JsonData = json,
                 QrImagePath = imagePath,
                 CreatedDate = DateTime.UtcNow,
@@ -194,13 +200,14 @@ public partial class GenerateQrViewModel : ObservableObject
         ValidationMessage = IsFormValid ? "Form hazır" : error;
     }
 
-    private AssetFormDto BuildForm() =>
-        new()
+    private AssetFormDto BuildForm()
+    {
+        var form = new AssetFormDto();
+        foreach (var field in Fields)
         {
-            Urun = Urun,
-            Materyal = Materyal,
-            Sahibi = Sahibi,
-            Konumu = Konumu,
-            SeriNo = SeriNo
-        };
+            form.SetValue(field.Key, field.Value);
+        }
+
+        return form;
+    }
 }

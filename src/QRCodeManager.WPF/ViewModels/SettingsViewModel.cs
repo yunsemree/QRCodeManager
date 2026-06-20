@@ -1,6 +1,8 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using QRCodeManager.Application.Constants;
 using QRCodeManager.Application.DTOs;
 using QRCodeManager.Application.Interfaces;
 using QRCodeManager.Domain.Enums;
@@ -28,10 +30,13 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    public ObservableCollection<FieldDefinitionItemViewModel> FieldDefinitions { get; } = [];
+
     public IReadOnlyList<string> Themes { get; } = ["Açık", "Koyu"];
     public IReadOnlyList<string> ExportFormats { get; } = ["PNG", "JPEG"];
 
     public event Action<string>? ThemeChanged;
+    public event Action? FieldDefinitionsChanged;
 
     public SettingsViewModel(ISettingsService settingsService, ILogger<SettingsViewModel> logger)
     {
@@ -48,6 +53,7 @@ public partial class SettingsViewModel : ObservableObject
         DefaultErrorCorrection = settings.DefaultErrorCorrection;
         DefaultExportFormat = settings.DefaultExportFormat;
         MaximumJsonSize = settings.MaximumJsonSize;
+        LoadFieldDefinitions(settings.FieldDefinitions);
         _isLoading = false;
     }
 
@@ -72,6 +78,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             await SaveAllSettingsAsync();
+            FieldDefinitionsChanged?.Invoke();
             StatusMessage = "Ayarlar kaydedildi.";
         }
         catch (Exception ex)
@@ -82,12 +89,34 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void AddField()
+    {
+        var nextOrder = FieldDefinitions.Count == 0 ? 0 : FieldDefinitions.Max(f => f.SortOrder) + 1;
+        FieldDefinitions.Add(new FieldDefinitionItemViewModel
+        {
+            Key = $"alan{nextOrder + 1}",
+            Label = "Yeni Alan",
+            SortOrder = nextOrder
+        });
+    }
+
+    [RelayCommand]
+    private void RemoveField(FieldDefinitionItemViewModel? field)
+    {
+        if (field is not null)
+        {
+            FieldDefinitions.Remove(field);
+        }
+    }
+
+    [RelayCommand]
     private void ResetToDefaults()
     {
         Theme = "Açık";
         DefaultErrorCorrection = QrErrorCorrectionLevel.M;
         DefaultExportFormat = "PNG";
         MaximumJsonSize = 4096;
+        LoadFieldDefinitions(FieldDefinitionDefaults.Create());
         StatusMessage = "Varsayılan ayarlar yüklendi.";
     }
 
@@ -109,16 +138,41 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task SaveAllSettingsAsync()
     {
+        var current = _settingsService.GetSettings();
         var settings = new AppSettings
         {
             Theme = MapThemeToStorage(Theme),
             DefaultErrorCorrection = DefaultErrorCorrection,
             DefaultExportFormat = DefaultExportFormat,
-            MaximumJsonSize = MaximumJsonSize
+            MaximumJsonSize = MaximumJsonSize,
+            FieldDefinitions = FieldDefinitions.Select(f => new FieldDefinitionDto
+            {
+                Key = f.Key.Trim(),
+                Label = f.Label.Trim(),
+                IsRequired = f.IsRequired,
+                SortOrder = f.SortOrder
+            }).ToList(),
+            IsAuthSkipped = current.IsAuthSkipped,
+            CurrentUserId = current.CurrentUserId
         };
 
         await _settingsService.SaveSettingsAsync(settings);
         ThemeChanged?.Invoke(settings.Theme);
+    }
+
+    private void LoadFieldDefinitions(IEnumerable<FieldDefinitionDto> definitions)
+    {
+        FieldDefinitions.Clear();
+        foreach (var definition in definitions.OrderBy(d => d.SortOrder))
+        {
+            FieldDefinitions.Add(new FieldDefinitionItemViewModel
+            {
+                Key = definition.Key,
+                Label = definition.Label,
+                IsRequired = definition.IsRequired,
+                SortOrder = definition.SortOrder
+            });
+        }
     }
 
     private static string MapThemeToDisplay(string theme) =>
