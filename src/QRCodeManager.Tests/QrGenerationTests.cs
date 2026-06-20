@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 using QRCodeManager.Application.Interfaces;
 using QRCodeManager.Domain.Enums;
 using QRCodeManager.Infrastructure.Services;
@@ -9,18 +8,14 @@ namespace QRCodeManager.Tests;
 public class QrGenerationTests
 {
     private readonly QrService _sut;
-    private readonly AssetFormService _assetFormService = new();
+    private readonly AssetFormService _assetFormService;
 
     public QrGenerationTests()
     {
+        var settingsService = TestData.CreateSettingsService();
         var jsonService = new JsonService(NullLogger<JsonService>.Instance);
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.Setup(x => x.GetSettings()).Returns(new Application.DTOs.AppSettings
-        {
-            MaximumJsonSize = 4096
-        });
-
-        _sut = new QrService(jsonService, settingsService.Object, NullLogger<QrService>.Instance);
+        _assetFormService = new AssetFormService(settingsService);
+        _sut = new QrService(jsonService, settingsService, NullLogger<QrService>.Instance);
     }
 
     [Fact]
@@ -28,8 +23,11 @@ public class QrGenerationTests
     {
         var content = _assetFormService.FormatDisplay(new Application.DTOs.AssetFormDto
         {
-            Urun = "Laptop",
-            SeriNo = "ABC123456"
+            Values =
+            {
+                ["urun"] = "Laptop",
+                ["seriNo"] = "ABC123456"
+            }
         });
 
         var result = _sut.GenerateQr(content, QrErrorCorrectionLevel.M);
@@ -43,15 +41,7 @@ public class QrGenerationTests
     [Fact]
     public void GenerateQr_TurkishCharacters_GeneratesSuccessfully()
     {
-        var content = _assetFormService.FormatDisplay(new Application.DTOs.AssetFormDto
-        {
-            Urun = "Laptop",
-            Materyal = "Alüminyum",
-            Sahibi = "Yunus Emre Teke",
-            Konumu = "Sivas Halk Eğitim Merkezi",
-            SeriNo = "ABC123456"
-        });
-
+        var content = _assetFormService.FormatDisplay(TestData.CreateSampleForm());
         var result = _sut.GenerateQr(content, QrErrorCorrectionLevel.H);
 
         Assert.NotEmpty(result);

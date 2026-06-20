@@ -28,6 +28,7 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <Style x:Key="NavButtonStyle" TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
             <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
             <Style.Triggers>
@@ -54,6 +55,7 @@
 
             <!-- Sidebar -->
             <Border Grid.Column="0"
+                    Visibility="{Binding IsSidebarVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                     Background="{DynamicResource SidebarBrush}"
                     BorderBrush="{DynamicResource SidebarBorderBrush}"
                     BorderThickness="0,0,1,0">
@@ -79,6 +81,19 @@
                     </StackPanel>
 
                     <StackPanel DockPanel.Dock="Bottom" Margin="0,16,0,8">
+                        <TextBlock Text="{Binding CurrentUserDisplay}"
+                                   Margin="4,0,0,8"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Visibility="{Binding CurrentUserDisplay, Converter={StaticResource NullToVisibilityConverter}}" />
+                        <Button Style="{StaticResource NavButtonStyle}"
+                                Command="{Binding LogoutCommand}"
+                                Visibility="{Binding CurrentUserDisplay, Converter={StaticResource NullToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Logout" Width="20" Height="20" Margin="0,0,12,0" />
+                                <TextBlock Text="Çıkış Yap" VerticalAlignment="Center" FontSize="14" />
+                            </StackPanel>
+                        </Button>
                         <Button Style="{StaticResource NavButtonStyle}"
                                 Command="{Binding NavigateCommand}"
                                 CommandParameter="Settings">
@@ -146,13 +161,17 @@
             </Border>
 
             <!-- Main content -->
-            <Grid Grid.Column="1" Margin="32,28,32,24">
+            <Grid Grid.Column="{Binding MainContentColumn}"
+                  Grid.ColumnSpan="{Binding MainContentColumnSpan}"
+                  Margin="32,28,32,24">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                <StackPanel Grid.Row="0"
+                            Margin="0,0,0,24"
+                            Visibility="{Binding IsSidebarVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <TextBlock Text="{Binding PageTitle}"
                                FontSize="28"
                                FontWeight="SemiBold"
@@ -165,6 +184,12 @@
 
                 <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}">
                     <ContentControl.Resources>
+                        <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+                            <views:LoginView />
+                        </DataTemplate>
+                        <DataTemplate DataType="{x:Type vm:RegisterViewModel}">
+                            <views:RegisterView />
+                        </DataTemplate>
                         <DataTemplate DataType="{x:Type vm:GenerateQrViewModel}">
                             <views:GenerateQrView />
                         </DataTemplate>

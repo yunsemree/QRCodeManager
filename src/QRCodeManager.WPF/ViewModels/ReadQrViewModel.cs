@@ -62,14 +62,36 @@ public partial class ReadQrViewModel : ObservableObject
     {
         try
         {
-            var rawText = _qrService.DecodeQrFromFile(SelectedImagePath);
-            var form = _assetFormService.ParseFromContent(rawText);
-            FormattedOutput = _assetFormService.FormatDisplay(form);
-            HasDecodedData = !string.IsNullOrWhiteSpace(form.Urun) || !string.IsNullOrWhiteSpace(form.SeriNo);
+            var rawText = _qrService.DecodeQrFromFile(SelectedImagePath).Trim();
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                FormattedOutput = string.Empty;
+                HasDecodedData = false;
+                StatusMessage = "QR okundu ancak içerik bulunamadı.";
+                return;
+            }
 
-            StatusMessage = HasDecodedData
-                ? "QR kodu başarıyla okundu."
-                : "QR okundu ancak eser bilgisi bulunamadı.";
+            if (Uri.TryCreate(rawText, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                FormattedOutput = $"URL\n{rawText}";
+                HasDecodedData = true;
+                StatusMessage = "URL içeren QR kodu başarıyla okundu.";
+                return;
+            }
+
+            var form = _assetFormService.ParseFromContent(rawText);
+            if (form.Values.Values.Any(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                FormattedOutput = _assetFormService.FormatDisplay(form);
+                HasDecodedData = true;
+                StatusMessage = "QR kodu başarıyla okundu.";
+                return;
+            }
+
+            FormattedOutput = rawText;
+            HasDecodedData = true;
+            StatusMessage = "Metin içeren QR kodu başarıyla okundu.";
         }
         catch (Application.Exceptions.QrProcessingException ex)
         {

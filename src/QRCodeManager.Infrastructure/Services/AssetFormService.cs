@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using QRCodeManager.Application.Constants;
 using QRCodeManager.Application.DTOs;
 using QRCodeManager.Application.Interfaces;
 
@@ -7,7 +8,7 @@ namespace QRCodeManager.Infrastructure.Services;
 
 public class AssetFormService : IAssetFormService
 {
-    private const int LabelWidth = 10;
+    private readonly ISettingsService _settingsService;
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -15,17 +16,19 @@ public class AssetFormService : IAssetFormService
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
+    public AssetFormService(ISettingsService settingsService)
+    {
+        _settingsService = settingsService;
+    }
+
     public string ToJson(AssetFormDto form)
     {
         var payload = new
         {
             eser = new
             {
-                urun = form.Urun.Trim(),
-                materyal = form.Materyal.Trim(),
-                sahibi = form.Sahibi.Trim(),
-                konumu = form.Konumu.Trim(),
-                seriNo = form.SeriNo.Trim()
+                schemaVersion = 2,
+                fields = BuildFieldPayload(form)
             }
         };
 
@@ -36,13 +39,18 @@ public class AssetFormService : IAssetFormService
 
     public string FormatDisplay(AssetFormDto form)
     {
+        var definitions = GetDefinitions();
+        var labelWidth = Math.Max(10, definitions.Max(d => d.Label.Length));
         var builder = new StringBuilder();
         builder.AppendLine("📦 Eser Bilgisi");
-        builder.AppendLine(FormatLine("Ürün", form.Urun));
-        builder.AppendLine(FormatLine("Materyal", form.Materyal));
-        builder.AppendLine(FormatLine("Sahibi", form.Sahibi));
-        builder.AppendLine(FormatLine("Konumu", form.Konumu));
-        builder.Append(FormatLine("Seri No", form.SeriNo));
+
+        for (var index = 0; index < definitions.Count; index++)
+        {
+            var definition = definitions[index];
+            var line = FormatLine(definition.Label, form.GetValue(definition.Key), labelWidth);
+            builder.Append(index == definitions.Count - 1 ? line : line + Environment.NewLine);
+        }
+
         return builder.ToString();
     }
 
@@ -54,12 +62,9 @@ public class AssetFormService : IAssetFormService
         }
 
         var trimmed = content.Trim();
-        if (trimmed.StartsWith('{'))
-        {
-            return ParseFromJson(trimmed);
-        }
-
-        return ParseFromDisplayText(trimmed);
+        return trimmed.StartsWith('{')
+            ? ParseFromJson(trimmed)
+            : ParseFromDisplayText(trimmed);
     }
 
     public AssetFormDto ParseFromJson(string json)
@@ -76,22 +81,32 @@ public class AssetFormService : IAssetFormService
             using var document = JsonDocument.Parse(json);
             if (document.RootElement.TryGetProperty("eser", out var eser))
             {
-                MapEserProperties(eser, form);
+                if (eser.TryGetProperty("fields", out var fields) && fields.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var property in fields.EnumerateObject())
+                    {
+                        form.SetValue(property.Name, property.Value.GetString() ?? string.Empty);
+                    }
+
+                    return form;
+                }
+
+                MapLegacyEserProperties(eser, form);
                 return form;
             }
 
             if (document.RootElement.TryGetProperty("asset", out var asset))
             {
-                form.SeriNo = GetString(asset, "id");
-                form.Urun = GetString(asset, "name");
-                form.Materyal = GetString(asset, "brand");
-                if (string.IsNullOrWhiteSpace(form.Materyal))
+                form.SetValue("seriNo", GetString(asset, "id"));
+                form.SetValue("urun", GetString(asset, "name"));
+                form.SetValue("materyal", GetString(asset, "brand"));
+                if (string.IsNullOrWhiteSpace(form.GetValue("materyal")))
                 {
-                    form.Materyal = GetString(asset, "model");
+                    form.SetValue("materyal", GetString(asset, "model"));
                 }
 
-                form.Sahibi = GetString(asset, "owner");
-                form.Konumu = GetString(asset, "location");
+                form.SetValue("sahibi", GetString(asset, "owner"));
+                form.SetValue("konumu", GetString(asset, "location"));
             }
         }
         catch (JsonException)
@@ -104,28 +119,59 @@ public class AssetFormService : IAssetFormService
 
     public bool TryValidate(AssetFormDto form, out string errorMessage)
     {
-        if (string.IsNullOrWhiteSpace(form.SeriNo))
+        foreach (var definition in GetDefinitions().Where(d => d.IsRequired))
         {
-            errorMessage = "Seri numarası zorunludur.";
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(form.Urun))
-        {
-            errorMessage = "Ürün adı zorunludur.";
-            return false;
+            if (string.IsNullOrWhiteSpace(form.GetValue(definition.Key)))
+            {
+                errorMessage = $"{definition.Label} zorunludur.";
+                return false;
+            }
         }
 
         errorMessage = string.Empty;
         return true;
     }
 
-    private static AssetFormDto ParseFromDisplayText(string text)
+    private IReadOnlyList<FieldDefinitionDto> GetDefinitions()
+    {
+        var definitions = _settingsService.GetSettings().FieldDefinitions;
+        if (definitions is null || definitions.Count == 0)
+        {
+            return FieldDefinitionDefaults.Create();
+        }
+
+        return definitions
+            .OrderBy(d => d.SortOrder)
+            .ThenBy(d => d.Label, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    private static Dictionary<string, string> BuildFieldPayload(AssetFormDto form)
+    {
+        var payload = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in form.Values)
+        {
+            payload[pair.Key] = pair.Value.Trim();
+        }
+
+        return payload;
+    }
+
+    private AssetFormDto ParseFromDisplayText(string text)
     {
         var form = new AssetFormDto();
+        var labelMap = GetDefinitions().ToDictionary(
+            d => d.Label,
+            d => d.Key,
+            StringComparer.CurrentCultureIgnoreCase);
 
         foreach (var line in text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
         {
+            if (line.StartsWith("📦", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             var separatorIndex = line.IndexOf(':');
             if (separatorIndex <= 0)
             {
@@ -135,40 +181,26 @@ public class AssetFormService : IAssetFormService
             var label = line[..separatorIndex].Trim();
             var value = line[(separatorIndex + 1)..].Trim();
 
-            switch (label)
+            if (labelMap.TryGetValue(label, out var key))
             {
-                case "Ürün":
-                    form.Urun = value;
-                    break;
-                case "Materyal":
-                    form.Materyal = value;
-                    break;
-                case "Sahibi":
-                    form.Sahibi = value;
-                    break;
-                case "Konumu":
-                    form.Konumu = value;
-                    break;
-                case "Seri No":
-                    form.SeriNo = value;
-                    break;
+                form.SetValue(key, value);
             }
         }
 
         return form;
     }
 
-    private static void MapEserProperties(JsonElement eser, AssetFormDto form)
+    private static void MapLegacyEserProperties(JsonElement eser, AssetFormDto form)
     {
-        form.Urun = GetString(eser, "urun");
-        form.Materyal = GetString(eser, "materyal");
-        form.Sahibi = GetString(eser, "sahibi");
-        form.Konumu = GetString(eser, "konumu");
-        form.SeriNo = GetString(eser, "seriNo");
+        form.SetValue("urun", GetString(eser, "urun"));
+        form.SetValue("materyal", GetString(eser, "materyal"));
+        form.SetValue("sahibi", GetString(eser, "sahibi"));
+        form.SetValue("konumu", GetString(eser, "konumu"));
+        form.SetValue("seriNo", GetString(eser, "seriNo"));
     }
 
-    private static string FormatLine(string label, string value) =>
-        $"{label.PadRight(LabelWidth)}: {value.Trim()}";
+    private static string FormatLine(string label, string value, int labelWidth) =>
+        $"{label.PadRight(labelWidth)}: {value.Trim()}";
 
     private static string GetString(JsonElement element, string propertyName) =>
         element.TryGetProperty(propertyName, out var value) ? value.GetString() ?? string.Empty : string.Empty;

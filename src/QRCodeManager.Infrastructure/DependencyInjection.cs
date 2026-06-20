@@ -15,6 +15,7 @@ public static class DependencyInjection
     {
         services.AddSingleton<IDatabasePathProvider, DatabasePathProvider>();
         services.AddSingleton<IDatabaseInitializationService, DatabaseInitializationService>();
+        services.AddSingleton<IAuthService, AuthService>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IJsonService, JsonService>();
         services.AddSingleton<IQrService, QrService>();
@@ -27,6 +28,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IHistoryRepository, HistoryRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddSingleton<ILoggerProvider>(serviceProvider =>
             new FileLoggerProvider(serviceProvider.GetRequiredService<IDatabasePathProvider>().LogFilePath));

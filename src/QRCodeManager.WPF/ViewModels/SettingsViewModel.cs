@@ -109,12 +109,17 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task SaveAllSettingsAsync()
     {
+        var current = _settingsService.GetSettings();
         var settings = new AppSettings
         {
             Theme = MapThemeToStorage(Theme),
             DefaultErrorCorrection = DefaultErrorCorrection,
             DefaultExportFormat = DefaultExportFormat,
-            MaximumJsonSize = MaximumJsonSize
+            MaximumJsonSize = MaximumJsonSize,
+            FieldDefinitions = current.FieldDefinitions,
+            DefaultQrContentType = current.DefaultQrContentType,
+            IsAuthSkipped = current.IsAuthSkipped,
+            CurrentUserId = current.CurrentUserId
         };
 
         await _settingsService.SaveSettingsAsync(settings);
