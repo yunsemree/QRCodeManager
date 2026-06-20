@@ -13,7 +13,7 @@
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TitleTextBrush}"
                                Margin="0,0,0,8" />
-                    <TextBlock Text="Tema değişiklikleri anında uygulanır."
+                    <TextBlock Text="Tema değişiklikleri anında uygulanır. Form alanları QR oluşturma ekranından yönetilir."
                                Foreground="{DynamicResource MutedTextBrush}"
                                Margin="0,0,0,20" />
 
@@ -41,61 +41,6 @@
                              materialDesign:HintAssist.Hint="Maksimum veri boyutu (karakter)"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              Text="{Binding MaximumJsonSize, UpdateSourceTrigger=PropertyChanged}" />
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource DashboardCard}" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="QR Alanları"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TitleTextBrush}"
-                               Margin="0,0,0,8" />
-                    <TextBlock Text="QR içeriğinde görünecek alanları özelleştirin."
-                               Foreground="{DynamicResource MutedTextBrush}"
-                               Margin="0,0,0,16" />
-
-                    <ItemsControl ItemsSource="{Binding FieldDefinitions}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,0,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="12" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBox Grid.Column="0"
-                                             materialDesign:HintAssist.Hint="Anahtar (key)"
-                                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                             Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="2"
-                                             materialDesign:HintAssist.Hint="Etiket"
-                                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                             Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}" />
-                                    <CheckBox Grid.Column="4"
-                                              Content="Zorunlu"
-                                              IsChecked="{Binding IsRequired}"
-                                              VerticalAlignment="Center" />
-                                    <Button Grid.Column="6"
-                                            Content="Sil"
-                                            Style="{StaticResource MaterialDesignOutlinedButton}"
-                                            Command="{Binding DataContext.RemoveFieldCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <Button Content="Alan Ekle"
-                            Margin="0,8,0,0"
-                            HorizontalAlignment="Left"
-                            Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Command="{Binding AddFieldCommand}" />
                 </StackPanel>
             </Border>
 

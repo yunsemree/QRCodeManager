@@ -34,7 +34,7 @@ public partial class MainViewModel : ObservableObject
     {
         AppPage.Login => "Hesabınıza giriş yapın veya atlayarak devam edin",
         AppPage.Register => "Yeni hesap oluşturun veya atlayarak devam edin",
-        AppPage.Generate => "Eser bilgilerinizi girin ve QR kodunuzu oluşturun",
+        AppPage.Generate => "İçerik tipini seçin, bilgileri girin ve QR kodunuzu oluşturun",
         AppPage.Read => "QR görüntüsü yükleyin ve eser bilgilerini okuyun",
         AppPage.History => "Oluşturduğunuz ve okuduğunuz QR kayıtları",
         AppPage.Settings => "Uygulama tercihlerinizi yönetin",
@@ -86,8 +86,6 @@ public partial class MainViewModel : ObservableObject
         RegisterViewModel.AuthSucceeded += EnterApplication;
         RegisterViewModel.AuthSkipped += EnterApplication;
         RegisterViewModel.RequestLogin += () => CurrentPage = AppPage.Login;
-
-        SettingsViewModel.FieldDefinitionsChanged += () => GenerateQrViewModel.ReloadFields();
 
         navigationMessenger.NavigateWithPayload += OnNavigateWithPayload;
     }

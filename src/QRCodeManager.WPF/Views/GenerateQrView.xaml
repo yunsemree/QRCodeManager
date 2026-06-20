@@ -6,6 +6,7 @@
              xmlns:converters="clr-namespace:QRCodeManager.WPF.Converters">
     <UserControl.Resources>
         <converters:BoolToValidationIconBrushConverter x:Key="ValidationIconBrushConverter" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -17,11 +18,17 @@
         <Border Grid.Column="0" Style="{StaticResource DashboardCard}">
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
-                    <TextBlock Text="Eser Bilgileri"
+                    <TextBlock Text="QR İçeriği"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TitleTextBrush}" />
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <ComboBox Margin="0,12,0,0"
+                              materialDesign:HintAssist.Hint="İçerik tipi"
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              DisplayMemberPath="DisplayName"
+                              ItemsSource="{Binding ContentTypeOptions}"
+                              SelectedItem="{Binding SelectedContentType}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                         <materialDesign:PackIcon Kind="CheckCircle"
                                                  Width="16" Height="16"
                                                  VerticalAlignment="Center"
@@ -39,8 +46,34 @@
                             Command="{Binding ClearFormCommand}" />
                 </StackPanel>
 
-                <controls:DynamicAssetFormControl Fields="{Binding Fields}"
-                                                  ShowRequiredHint="True" />
+                <Grid>
+                    <controls:DynamicAssetFormControl Fields="{Binding Fields}"
+                                                      ShowRequiredHint="True"
+                                                      AddFieldCommand="{Binding AddFieldCommand}"
+                                                      RemoveFieldCommand="{Binding RemoveFieldCommand}"
+                                                      Visibility="{Binding IsAssetFormContent, Converter={StaticResource BoolToVisibility}}" />
+
+                    <StackPanel Visibility="{Binding IsUrlContent, Converter={StaticResource BoolToVisibility}}">
+                        <TextBox materialDesign:HintAssist.Hint="URL (https://...)"
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 materialDesign:TextFieldAssist.HasClearButton="True"
+                                 Text="{Binding UrlContent, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   FontSize="12"
+                                   Text="QR kodu doğrudan bu adrese yönlendirir." />
+                    </StackPanel>
+
+                    <TextBox Visibility="{Binding IsPlainTextContent, Converter={StaticResource BoolToVisibility}}"
+                             materialDesign:HintAssist.Hint="Metin içeriği"
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             materialDesign:TextFieldAssist.HasClearButton="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             MinHeight="160"
+                             VerticalScrollBarVisibility="Auto"
+                             Text="{Binding PlainTextContent, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
             </DockPanel>
         </Border>
 

@@ -10,6 +10,7 @@ public class AppSettings
     public string DefaultExportFormat { get; set; } = "PNG";
     public int MaximumJsonSize { get; set; } = 4096;
     public List<FieldDefinitionDto> FieldDefinitions { get; set; } = FieldDefinitionDefaults.Create();
+    public QrContentType DefaultQrContentType { get; set; } = QrContentType.AssetForm;
     public bool IsAuthSkipped { get; set; }
     public int? CurrentUserId { get; set; }
 }

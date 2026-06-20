@@ -6,18 +6,32 @@ public partial class DynamicFormField : ObservableObject
 {
     public DynamicFormField(string key, string label, bool isRequired, string value = "")
     {
-        Key = key;
-        Label = label;
-        IsRequired = isRequired;
+        _key = key;
+        _label = label;
+        _isRequired = isRequired;
         _value = value;
-        Hint = isRequired ? $"{label} *" : label;
+        UpdateHint();
     }
 
-    public string Key { get; }
-    public string Label { get; }
-    public bool IsRequired { get; }
-    public string Hint { get; }
+    [ObservableProperty]
+    private string _key;
+
+    [ObservableProperty]
+    private string _label;
+
+    [ObservableProperty]
+    private bool _isRequired;
 
     [ObservableProperty]
     private string _value;
+
+    [ObservableProperty]
+    private string _hint = string.Empty;
+
+    partial void OnLabelChanged(string value) => UpdateHint();
+
+    partial void OnIsRequiredChanged(bool value) => UpdateHint();
+
+    private void UpdateHint() =>
+        Hint = IsRequired ? $"{Label} *" : Label;
 }
